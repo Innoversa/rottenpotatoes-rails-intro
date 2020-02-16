@@ -1,8 +1,6 @@
 class MoviesController < ApplicationController
-
-  def movie_params
-    params.require(:movie).permit(:title, :rating, :description, :release_date)
-  end
+  helper_method :hilight
+  helper_method :chosen_rating?
 
   def show
     id = params[:id] # retrieve movie ID from URI route
@@ -11,21 +9,16 @@ class MoviesController < ApplicationController
   end
 
   def index
-    @all_ratings = Movie.order(:rating).select(:rating).map(&:rating).uniq
-    @checked_ratings = check
-    @checked_ratings.each do |rating|
-      session[rating] = true
-    end
-    #my modification
-    # @movies = Movie.all
-    if session[:sort]
-      @movies = Movie.order(session[:sort])
+    session[:ratings] = params[:ratings] unless params[:ratings].nil?
+    session[:order] = params[:order] unless params[:order].nil?
+    @all_ratings = ['G','PG','PG-13','R']
+    if session[:ratings].nil?
+      @movies = Movie.order session[:order]
     else
-      # @movies = Movie.all
-      @movies = Movie.where(:rating => @checked_ratings)
-      
+      array_ratings = session[:ratings].keys
+      @chosen_ratings = array_ratings
+      @movies = Movie.where(rating: array_ratings).order session[:order]
     end
-    #modification completed
   end
 
   def new
@@ -33,7 +26,7 @@ class MoviesController < ApplicationController
   end
 
   def create
-    @movie = Movie.create!(movie_params)
+    @movie = Movie.create!(params[:movie])
     flash[:notice] = "#{@movie.title} was successfully created."
     redirect_to movies_path
   end
@@ -44,7 +37,7 @@ class MoviesController < ApplicationController
 
   def update
     @movie = Movie.find params[:id]
-    @movie.update_attributes!(movie_params)
+    @movie.update_attributes!(params[:movie])
     flash[:notice] = "#{@movie.title} was successfully updated."
     redirect_to movie_path(@movie)
   end
@@ -56,14 +49,17 @@ class MoviesController < ApplicationController
     redirect_to movies_path
   end
 
-  private
-
-  def check
-    if params[:ratings]
-      params[:ratings].keys
+  def hilight(column)
+    if(session[:order].to_s == column)
+      return 'hilite'
     else
-      @all_ratings
+      return nil
     end
   end
 
+  def chosen_rating?(rating)
+    chosen_ratings = session[:ratings]
+    return true if chosen_ratings.nil?
+    chosen_ratings.include? rating
+  end
 end
