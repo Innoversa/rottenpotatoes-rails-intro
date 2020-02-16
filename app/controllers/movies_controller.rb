@@ -14,12 +14,12 @@ class MoviesController < ApplicationController
     @all_ratings = Movie.order(:rating).select(:rating).map(&:rating).uniq
     @checked_ratings = check
     @checked_ratings.each do |rating|
-      params[rating] = true
+      session[rating] = true
     end
     #my modification
     # @movies = Movie.all
-    if params[:sort]
-      @movies = Movie.order(params[:sort])
+    if session[:sort]
+      @movies = Movie.order(session[:sort])
     else
       # @movies = Movie.all
       @movies = Movie.where(:rating => @checked_ratings)
